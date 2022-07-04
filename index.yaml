@@ -31,3 +31,11 @@ Resources:
         Ref: InstanceTypeParameter
       AvailabilityZone: us-east-1a
       ImageId: !Ref LatestAmiId
+
+  PiianLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: internet-facing
+      Subnets:
+        - "subnet-05dc5323a90701745"
+        - "subnet-0462080141c44392d"
