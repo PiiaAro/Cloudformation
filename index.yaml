@@ -14,28 +14,82 @@ Parameters:
   LatestAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/amzn-ami-hvm-x86_64-gp2
+  ALBSubnetList:
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: subnet-05dc5323a90701745, subnet-0462080141c44392d
+  VPC:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-02f0416e2af96dc4e
 
 Resources:
   piianBucket:
     Type: "AWS::S3::Bucket"
-
   piianQueue:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 30
 
-  PiianTestiInstance:
-    Type: "AWS::EC2::Instance"
+  SecurityGroupALB:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      InstanceType:
-        Ref: InstanceTypeParameter
-      AvailabilityZone: us-east-1a
+      GroupDescription: Allow incoming from anywhere to HTTPS and HTTP
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443tcp
+          ToPort: 443
+      VpcId: !Ref VPC
+
+  SecurityGroupEC2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  PiianTestiInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      SecurityGroups:
+        - !Ref SecurityGroupEC2
       ImageId: !Ref LatestAmiId
+      AvailabilityZone: us-east-1a
 
   PiianLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
+      SecurityGroups:
+        - !Ref SecurityGroupALB
       Scheme: internet-facing
-      Subnets:
-        - "subnet-05dc5323a90701745"
-        - "subnet-0462080141c44392d"
+      Subnets: !Ref ALBSubnetList
+
+  PiianTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref VPC
+      TargetType: instance
+
+  PiiaALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref PiianLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref PiianTargetGroup
+
+Outputs:
+  PiiaEndpointALB:
+    Description: LoadBalancer DNS name
+    Value: !GetAtt PiianLoadBalancer.DNSName
