@@ -1,6 +1,20 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Academy Demo CloudFormation
 
+Parameters:
+  InstanceTypeParameter:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro.
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn-ami-hvm-x86_64-gp2
+
 Resources:
   piianBucket:
     Type: "AWS::S3::Bucket"
@@ -9,3 +23,11 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       VisibilityTimeout: 30
+
+  PiianTestiInstance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      InstanceType:
+        Ref: InstanceTypeParameter
+      AvailabilityZone: us-east-1a
+      ImageId: !Ref LatestAmiId
