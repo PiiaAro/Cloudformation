@@ -5,7 +5,7 @@ Resources:
   piianBucket:
     Type: "AWS::S3::Bucket"
 
-MyQueue:
-  Type: AWS::SQS::Queue
-  Properties:
-    VisibilityTimeout: 30
+  piianQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 30
