@@ -1,0 +1,1 @@
+AWS cloudformation create-stack --stack-name piian-stack --template-body file://index.yaml
